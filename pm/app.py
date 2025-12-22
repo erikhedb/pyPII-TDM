@@ -109,39 +109,35 @@ def generate_data() -> None:
         with _connect() as conn:
             with closing(conn.cursor()) as cur:
                 for seq in range(1, count + 1):
-                    given = random.choice(pools["GivenName"])
-                    middle = random.choice(pools["MiddleName"])
-                    surname = random.choice(pools["Surname"])
-                    country = random.choice(pools["CountryCode"])
-                    city = random.choice(pools["City"])
-                    postal = random.choice(pools["PostalCode"])
-                    party_type = random.choice(pools["PartyType"])
-                    status = random.choice(pools["Status"])
-                    phone = random.choice(pools["Phone"])
-                    email = f"{given.lower()}.{surname.lower()}.{seq}@example.com"
-                    external_ref = f"EXTGEN{seq:06d}"
+                    name1 = random.choice(pools["name1"])
+                    name2 = random.choice(pools["name2"])
+                    surname1 = random.choice(pools["surname1"])
+                    surname2 = random.choice(pools["surname2"])
+                    street = random.choice(pools["street"])
+                    postal = random.choice(pools["postal_code"])
+                    city = random.choice(pools["city"])
+                    country = random.choice(pools["country"])
+                    first_name = f"{name1} {name2}".strip()
+                    last_name = f"{surname1} {surname2}".strip()
+                    party_type = random.choice(["Person", "Company"])
                     batch.append(
                         (
-                            external_ref,
-                            party_type,
-                            given,
-                            middle,
-                            surname,
-                            country,
-                            city,
+                            first_name,
+                            last_name,
+                            street,
+                            "",
                             postal,
-                            email,
-                            phone,
-                            status,
+                            city,
+                            country,
+                            party_type,
                         )
                     )
                     if len(batch) >= batch_size:
                         cur.executemany(
                             """
                             INSERT INTO dbo.Party
-                                (ExternalRef, PartyType, GivenName, MiddleName, Surname,
-                                 CountryCode, City, PostalCode, Email, Phone, Status)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                (FirstName, LastName, Address1, Address2, Zip, City, Country, [Type])
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                             """,
                             batch,
                         )
@@ -152,9 +148,8 @@ def generate_data() -> None:
                     cur.executemany(
                         """
                         INSERT INTO dbo.Party
-                            (ExternalRef, PartyType, GivenName, MiddleName, Surname,
-                             CountryCode, City, PostalCode, Email, Phone, Status)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            (FirstName, LastName, Address1, Address2, Zip, City, Country, [Type])
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         batch,
                     )
@@ -174,10 +169,10 @@ def list_recent_rows() -> None:
                 cur.execute(
                     """
                     SELECT TOP 5
-                        PartyId,
-                        CONCAT_WS(' ', GivenName, MiddleName, Surname) AS FullName
+                        Id,
+                        CONCAT_WS(' ', FirstName, LastName) AS FullName
                     FROM dbo.Party
-                    ORDER BY PartyId DESC;
+                    ORDER BY Id DESC;
                     """
                 )
                 rows = cur.fetchall()
@@ -207,7 +202,7 @@ def _print_table(headers: list[str], rows: list[tuple]) -> None:
 
 
 def show_party_by_id() -> None:
-    raw = input("Enter PartyId: ").strip()
+    raw = input("Enter Id: ").strip()
     if not raw.isdigit():
         print("Please enter a numeric id.")
         return
@@ -218,13 +213,11 @@ def show_party_by_id() -> None:
                 cur.execute(
                     """
                     SELECT
-                        PartyId, ExternalRef, PartyType,
-                        GivenName, MiddleName, Surname,
-                        CountryCode, City, PostalCode,
-                        Email, Phone, Status,
-                        CreatedAt, UpdatedAt
+                        Id, FirstName, LastName,
+                        Address1, Address2, Zip,
+                        City, Country, [Type]
                     FROM dbo.Party
-                    WHERE PartyId = %s
+                    WHERE Id = %s
                     """,
                     (pid,),
                 )
@@ -233,20 +226,15 @@ def show_party_by_id() -> None:
                     print(f"No Party found with id {pid}.")
                     return
                 headers = [
-                    "PartyId",
-                    "ExternalRef",
-                    "PartyType",
-                    "GivenName",
-                    "MiddleName",
-                    "Surname",
-                    "CountryCode",
+                    "Id",
+                    "FirstName",
+                    "LastName",
+                    "Address1",
+                    "Address2",
+                    "Zip",
                     "City",
-                    "PostalCode",
-                    "Email",
-                    "Phone",
-                    "Status",
-                    "CreatedAt",
-                    "UpdatedAt",
+                    "Country",
+                    "Type",
                 ]
                 _print_table(headers, [row])
     except pymssql.Error as exc:

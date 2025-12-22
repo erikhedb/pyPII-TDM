@@ -7,17 +7,14 @@ from pathlib import Path
 
 SAMPLE_CSV_PATH = Path(__file__).parent / "sample_data.csv"
 CSV_HEADERS = [
-    "ExternalRef",
-    "PartyType",
-    "GivenName",
-    "MiddleName",
-    "Surname",
-    "CountryCode",
-    "City",
-    "PostalCode",
-    "Email",
-    "Phone",
-    "Status",
+    "name1",
+    "name2",
+    "surname1",
+    "surname2",
+    "street",
+    "postal_code",
+    "city",
+    "country",
 ]
 
 
