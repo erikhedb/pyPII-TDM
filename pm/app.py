@@ -1,4 +1,4 @@
-CONNECTION_STRING = "Server=stage;Database=pm;User Id=pmuser;Password=StrongP@ssw0rd!;"
+CONNECTION_STRING = "Server=stage.home.arpa;Database=pm;User Id=pmuser;Password=StrongP@ssw0rd!;"
 
 import random
 import sys
@@ -108,6 +108,12 @@ def generate_data() -> None:
         batch_size = 500
         with _connect() as conn:
             with closing(conn.cursor()) as cur:
+                cur.execute("SET DEADLOCK_PRIORITY LOW; SET LOCK_TIMEOUT 5000;")
+                insert_sql = """
+                    INSERT INTO dbo.Party
+                        (FirstName, LastName, Address1, Address2, Zip, City, Country, [Type])
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """
                 for seq in range(1, count + 1):
                     name1 = random.choice(pools["name1"])
                     name2 = random.choice(pools["name2"])
@@ -133,29 +139,16 @@ def generate_data() -> None:
                         )
                     )
                     if len(batch) >= batch_size:
-                        cur.executemany(
-                            """
-                            INSERT INTO dbo.Party
-                                (FirstName, LastName, Address1, Address2, Zip, City, Country, [Type])
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                            """,
-                            batch,
-                        )
+                        cur.executemany(insert_sql, batch)
+                        conn.commit()
                         inserted += len(batch)
                         batch.clear()
                         print(f"Inserted {inserted}/{count}", end="\r", flush=True)
                 if batch:
-                    cur.executemany(
-                        """
-                        INSERT INTO dbo.Party
-                            (FirstName, LastName, Address1, Address2, Zip, City, Country, [Type])
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        batch,
-                    )
+                    cur.executemany(insert_sql, batch)
+                    conn.commit()
                     inserted += len(batch)
                     print(f"Inserted {inserted}/{count}", end="\r", flush=True)
-            conn.commit()
         duration = time.perf_counter() - start_time
         print(f"\nInserted {inserted} party rows in {duration:.2f}s.")
     except pymssql.Error as exc:
