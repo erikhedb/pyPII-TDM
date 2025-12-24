@@ -1,4 +1,4 @@
-CONNECTION_STRING = "Server=stage.home.arpa;Database=pm;User Id=pmuser;Password=StrongP@ssw0rd!;"
+CONNECTION_STRING = "Server=prod.home.arpa;Database=pm;User Id=pmuser;Password=StrongP@ssw0rd!;"
 
 import random
 import sys
