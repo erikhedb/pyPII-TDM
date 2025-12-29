@@ -1,4 +1,4 @@
-CONNECTION_STRING = "Server=prod.home.arpa;Database=pm;User Id=pmuser;Password=StrongP@ssw0rd!;"
+CONNECTION_STRING = "Server=prod.home.arpa;Database=db1;User Id=dbuser;Password=StrongSAPasswordHere!;"
 
 import random
 import sys
@@ -111,7 +111,7 @@ def generate_data() -> None:
                 cur.execute("SET DEADLOCK_PRIORITY LOW; SET LOCK_TIMEOUT 5000;")
                 insert_sql = """
                     INSERT INTO dbo.Party
-                        (FirstName, LastName, Address1, Address2, Zip, City, Country, [Type])
+                        (First_Name, Last_Name, Adress1, Adress2, Zip, City, Country, [Type])
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 for seq in range(1, count + 1):
@@ -163,7 +163,7 @@ def list_recent_rows() -> None:
                     """
                     SELECT TOP 5
                         Id,
-                        CONCAT_WS(' ', FirstName, LastName) AS FullName
+                        CONCAT_WS(' ', First_Name, Last_Name) AS FullName
                     FROM dbo.Party
                     ORDER BY Id DESC;
                     """
@@ -206,8 +206,8 @@ def show_party_by_id() -> None:
                 cur.execute(
                     """
                     SELECT
-                        Id, FirstName, LastName,
-                        Address1, Address2, Zip,
+                        Id, First_Name, Last_Name,
+                        Adress1, Adress2, Zip,
                         City, Country, [Type]
                     FROM dbo.Party
                     WHERE Id = %s
@@ -220,10 +220,10 @@ def show_party_by_id() -> None:
                     return
                 headers = [
                     "Id",
-                    "FirstName",
-                    "LastName",
-                    "Address1",
-                    "Address2",
+                    "First_Name",
+                    "Last_Name",
+                    "Adress1",
+                    "Adress2",
                     "Zip",
                     "City",
                     "Country",
