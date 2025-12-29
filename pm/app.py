@@ -1,4 +1,5 @@
 CONNECTION_STRING = "Server=prod.home.arpa;Database=db1;User Id=dbuser;Password=StrongSAPasswordHere!;"
+_DB_OVERRIDE: str | None = None
 
 import random
 import sys
@@ -33,7 +34,7 @@ def _connect() -> pymssql.Connection:
     params = _connection_params()
     return pymssql.connect(
         server=params.get("Server"),
-        database=params.get("Database"),
+        database=_DB_OVERRIDE or params.get("Database"),
         user=params.get("User Id") or params.get("Uid"),
         password=params.get("Password"),
         port=int(params.get("Port", "1433")),
@@ -78,19 +79,23 @@ def list_tables() -> None:
         print(f"Could not list tables: {exc}")
 
 
-def generate_data() -> None:
+def generate_data(count: int | None = None) -> None:
     start_time = time.perf_counter()
-    raw = input("How many rows to generate? [default 1000] ").strip()
-    if readline and readline.get_current_history_length() > 0:
-        try:
-            readline.remove_history_item(readline.get_current_history_length() - 1)
-        except Exception:
-            pass
-    if raw == "":
-        count = 1000
-    elif raw.isdigit() and int(raw) > 0:
-        count = int(raw)
-    else:
+    if count is None:
+        raw = input("How many rows to generate? [default 1000] ").strip()
+        if readline and readline.get_current_history_length() > 0:
+            try:
+                readline.remove_history_item(readline.get_current_history_length() - 1)
+            except Exception:
+                pass
+        if raw == "":
+            count = 1000
+        elif raw.isdigit() and int(raw) > 0:
+            count = int(raw)
+        else:
+            print("Please enter a positive integer.")
+            return
+    elif count <= 0:
         print("Please enter a positive integer.")
         return
     try:
@@ -257,7 +262,53 @@ def _setup_history() -> None:
     atexit.register(save_history)
 
 
+def _parse_background_rows(argv: list[str]) -> int | None:
+    if "-bg" not in argv:
+        return None
+    idx = argv.index("-bg")
+    if idx == len(argv) - 1:
+        print("Missing value for -bg. Example: -bg 1000")
+        sys.exit(2)
+    raw = argv[idx + 1]
+    if not raw.isdigit() or int(raw) <= 0:
+        print("Value for -bg must be a positive integer.")
+        sys.exit(2)
+    return int(raw)
+
+
+def _parse_database_override(argv: list[str]) -> str | None:
+    if "-db" not in argv:
+        return None
+    idx = argv.index("-db")
+    if idx == len(argv) - 1:
+        print("Missing value for -db. Example: -db mydb")
+        sys.exit(2)
+    value = argv[idx + 1].strip()
+    if not value:
+        print("Value for -db must be a non-empty database name.")
+        sys.exit(2)
+    return value
+
+
+def _print_usage() -> None:
+    print("Usage: python pm/app.py [options]")
+    print("")
+    print("Options:")
+    print("  ?           Show this help message and exit.")
+    print("  -bg NO      Number of synthetic rows to add (runs non-interactive).")
+    print("  -db NAME    Override the database name from the connection string.")
+
+
 def main() -> None:
+    if "?" in sys.argv[1:]:
+        _print_usage()
+        return
+    global _DB_OVERRIDE
+    _DB_OVERRIDE = _parse_database_override(sys.argv[1:])
+    bg_rows = _parse_background_rows(sys.argv[1:])
+    if bg_rows is not None:
+        generate_data(bg_rows)
+        return
     _setup_history()
     options: dict[str, tuple[str, Callable[[], None]]] = {
         "1": ("Test connection", test_connection),
