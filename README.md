@@ -1,6 +1,8 @@
 # pyPII-TDM - PM
 This is a small, simple project to generate a bank party master PM using synthetic data. I use it for development and performance testing of masking algorithms.
 
+Test run - Inserted 10000000 party rows in 3927.80s = 1:05h
+
 ## Running the console app
 The `pm` console script provides a simple menu to test the database connection and list tables.
 
